@@ -15,7 +15,7 @@ python -m venv .venv
 .venv\Scripts\activate       # Windows
 # yoki: source .venv/bin/activate   # macOS/Linux
 pip install -r requirements/base.txt
-copy .env.example .env       # yoki: cp .env.example .env
+copy .env .env       # yoki: cp .env .env
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
@@ -31,7 +31,7 @@ Admin panelga kirish uchun `createsuperuser` bilan yaratgan hisobingizdan (is_st
 ```bash
 cd frontend
 npm install
-copy .env.example .env       # yoki: cp .env.example .env
+copy .env .env       # yoki: cp .env .env
 npm run dev
 ```
 Frontend: http://localhost:5173

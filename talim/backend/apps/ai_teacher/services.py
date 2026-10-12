@@ -63,9 +63,11 @@ def _extract_responses_text(data: dict) -> str:
     return "\n".join(t for t in texts if t).strip()
 
 
+
 def _call_xai(prompt: str, system: str = "") -> str | None:
-    """xAI Grok /v1/responses orqali chaqiradi. Muvaffaqiyatsiz bo'lsa None qaytaradi
-    (shunda call_ai keyingi provayderga — Groq'ga — o'tadi)."""
+    """xAI Grok API orqali so‘rov yuboradi.
+    Xatolik yuz bersa None qaytaradi va Groq'ga o'tiladi.
+    """
     import requests
 
     if not settings.XAI_API_KEY:
@@ -76,38 +78,70 @@ def _call_xai(prompt: str, system: str = "") -> str | None:
         "Authorization": f"Bearer {settings.XAI_API_KEY}",
         "Content-Type": "application/json",
     }
-    payload = {"model": settings.XAI_MODEL, "input": prompt}
+
+    payload = {
+        "model": "openai/gpt-oss-20b",
+        "messages": messages,
+        "tool_choice": "none",
+    }
+
     if system:
         payload["instructions"] = system
 
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=20)
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        resp = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=30,
+        )
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+        print(f"xAI ulanish xatosi: {exc}")
+        return None
+    except requests.exceptions.RequestException as exc:
+        print(f"xAI so‘rov xatosi: {exc}")
         return None
 
     if resp.status_code == 429:
-        return "AI so'rovlar chegarasiga yetdi. Bir necha daqiqadan so'ng qayta urinib ko'ring."
+        print("xAI: so‘rovlar limiti tugagan.")
+        return None
+
     if resp.status_code in (401, 403):
-        return None  # noto'g'ri/eskirgan API kalit — Groq'ga tushamiz
+        print(f"xAI API kaliti yoki ruxsat xatosi: {resp.status_code}")
+        return None
+
+    if not resp.ok:
+        print(f"xAI HTTP xatosi: {resp.status_code}")
+        print(f"xAI javobi: {resp.text[:2000]}")
+        return None
+
     try:
-        resp.raise_for_status()
         data = resp.json()
         text = _extract_responses_text(data)
+
+        if not text:
+            print("xAI javobida matn topilmadi.")
+
         return text or None
-    except (requests.exceptions.HTTPError, ValueError, KeyError):
+
+    except (ValueError, KeyError, TypeError) as exc:
+        print(f"xAI javobini o‘qish xatosi: {exc}")
         return None
+
 
 
 def _call_groq(prompt: str, system: str = "") -> str:
     import requests
 
-    if not settings.GROQ_API_KEY:
+    api_key = getattr(settings, "GROQ_API_KEY", "")
+    if not api_key:
+        logger.warning("GROQ_API_KEY sozlanmagan.")
         return OFFLINE_FALLBACK_REPLY
 
     url = "https://api.groq.com/openai/v1/chat/completions"
 
     headers = {
-        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 
@@ -116,12 +150,12 @@ def _call_groq(prompt: str, system: str = "") -> str:
     if system:
         messages.append({
             "role": "system",
-            "content": system
+            "content": system,
         })
 
     messages.append({
         "role": "user",
-        "content": prompt
+        "content": prompt,
     })
 
     payload = {
@@ -134,30 +168,57 @@ def _call_groq(prompt: str, system: str = "") -> str:
             url,
             headers=headers,
             json=payload,
-            timeout=20,
+            timeout=30,
         )
-
-    except Exception as e:
-        logger.warning("Groq ulanish xatosi: %r", e)
+    except requests.exceptions.RequestException as exc:
+        logger.warning("Groq ulanish xatosi: %s", exc)
         return OFFLINE_FALLBACK_REPLY
 
-    if resp.status_code == 429:
-        return "AI so'rovlar chegarasiga yetdi."
+    # HTTP xatolarining haqiqiy sababini logga chiqaramiz.
+    if not resp.ok:
+        logger.error(
+            "Groq API xatosi: status=%s, javob=%s",
+            resp.status_code,
+            resp.text[:2000],
+        )
 
-    if resp.status_code == 401:
-        return "GROQ API KEY noto'g'ri yoki ishlamayapti."
+        if resp.status_code == 401:
+            return "GROQ_API_KEY noto'g'ri yoki eskirgan."
 
-    if resp.status_code == 404:
-        return "Groq model yoki API endpoint topilmadi."
+        if resp.status_code == 403:
+            return "Groq API so'rovni rad etdi. Kalit ruxsatlarini tekshiring."
+
+        if resp.status_code == 404:
+            return "Groq modeli yoki API manzili topilmadi."
+
+        if resp.status_code == 429:
+            return "AI so'rovlar chegarasiga yetdi. Keyinroq qayta urinib ko'ring."
+
+        return OFFLINE_FALLBACK_REPLY
 
     try:
-        resp.raise_for_status()
         data = resp.json()
+        choices = data.get("choices", [])
 
-        return data["choices"][0]["message"]["content"]
+        if not choices:
+            logger.error("Groq javobida choices mavjud emas: %s", str(data)[:1000])
+            return OFFLINE_FALLBACK_REPLY
 
-    except Exception as e:
-        logger.warning("Groq javobini o'qib bo'lmadi: %r", e)
+        message = choices[0].get("message", {})
+        content = message.get("content")
+
+        # Ba'zi reasoning modellarida matn content ichida bo'lmasligi mumkin.
+        if isinstance(content, str) and content.strip():
+            return content.strip()
+
+        logger.warning(
+            "Groq javobida matn topilmadi: %s",
+            str(data)[:1000],
+        )
+        return OFFLINE_FALLBACK_REPLY
+
+    except (ValueError, KeyError, TypeError, IndexError) as exc:
+        logger.exception("Groq javobini o'qish xatosi: %s", exc)
         return OFFLINE_FALLBACK_REPLY
 
 def call_ai(prompt: str, system: str = "") -> str:

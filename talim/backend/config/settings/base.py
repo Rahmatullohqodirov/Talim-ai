@@ -166,9 +166,14 @@ CLICK_SECRET_KEY = config("CLICK_SECRET_KEY", default="")  # Click imzo (sign_st
 
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:5173,http://127.0.0.1:5173",
+    default=(
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173,"
+        "https://talim-ai-nu.vercel.app"
+    ),
     cast=lambda v: [s.strip() for s in v.split(",")],
 )
+
 CORS_ALLOW_CREDENTIALS = True
 
 LANGUAGE_CODE = "en-us"
