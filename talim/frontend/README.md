@@ -6,7 +6,7 @@ Vite + React + React Router, **backendga ulangan** (`supertutor_ai` Django API).
 
 ```bash
 npm install
-cp .env.example .env   # VITE_API_BASE_URL ni backend manzilingizga moslang
+cp .env .env   # VITE_API_BASE_URL ni backend manzilingizga moslang
 npm run dev
 ```
 
