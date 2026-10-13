@@ -74,3 +74,10 @@ if not SECRET_KEY or SECRET_KEY == "dev-secret-key-change-me":
     )
 if not ALLOWED_HOSTS:
     raise RuntimeError("ALLOWED_HOSTS bo'sh — .env fayliga real domeningizni yozing (masalan: talim.uz,www.talim.uz).")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "talim-production-cache",
+    }
+}
