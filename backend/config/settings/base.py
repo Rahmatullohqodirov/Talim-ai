@@ -9,9 +9,6 @@ AUTH_USER_MODEL = "accounts.User"
 ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 # --- Email (ro'yxatdan o'tishni tasdiqlash uchun) ---
-# Standart: konsolga chiqaradi (dev uchun qulay). Haqiqiy email yuborish uchun .env fayliga
-# EMAIL_HOST/EMAIL_HOST_USER/EMAIL_HOST_PASSWORD to'ldiring (masalan Gmail App Password,
-# yoki SendGrid/Mailgun/Amazon SES SMTP ma'lumotlari) — shunda avtomatik SMTP orqali yuboradi.
 EMAIL_HOST = config("EMAIL_HOST", default="")
 if EMAIL_HOST:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -23,17 +20,13 @@ else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="no-reply@talim.uz")
 
-# --- Google / Facebook orqali kirish (ixtiyoriy — .env'da bo'sh qoldirilsa, shu provayder
-#     orqali kirish frontendda "hali sozlanmagan" deb ko'rsatiladi, ilova buzilmaydi) ---
+# --- Google / Facebook orqali kirish (ixtiyoriy) ---
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", default="")
 FACEBOOK_APP_ID = config("FACEBOOK_APP_ID", default="")
 FACEBOOK_APP_SECRET = config("FACEBOOK_APP_SECRET", default="")
 
 # Frontend manzili — tasdiqlash havolasi shu domenga yo'naltiriladi
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
-
-# (Eski GOOGLE_OAUTH_* / FACEBOOK_OAUTH_* sozlamalari ishlatilmas edi — olib tashlandi; yuqoridagi
-#  GOOGLE_CLIENT_ID / FACEBOOK_APP_ID / FACEBOOK_APP_SECRET dan foydalaning.)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -66,8 +59,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
+    # CorsMiddleware ENG BIRINCHI bo'lishi kerak: SecurityMiddleware'ning SSL redirecti
+    # preflight (OPTIONS) so'rovni buzmasligi uchun.
     "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -121,15 +116,14 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Login/register kabi ochiq endpointlarni brute-force'dan himoya qilish
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.ScopedRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "auth": "10/min",       # login/register urinishlari
-        "payment": "20/min",    # to'lov yaratish so'rovlari
-        "activity": "30/min",   # faollik vaqtini qayd etish (har daqiqada yuboriladi)
-        "youtube_search": "20/min",  # YouTube API kvotasini tejash
+        "auth": "10/min",
+        "payment": "20/min",
+        "activity": "30/min",
+        "youtube_search": "20/min",
     },
 }
 
@@ -157,15 +151,16 @@ CELERY_TASK_ACKS_LATE = True
 
 YOUTUBE_API_KEY = config("YOUTUBE_API_KEY", default="")
 GROQ_API_KEY = config("GROQ_API_KEY", default="")
-XAI_API_KEY = config("XAI_API_KEY", default="")  # https://x.ai — Grok (AI Chat/Lesson Generator uchun asosiy provayder)
+XAI_API_KEY = config("XAI_API_KEY", default="")
 USD_TO_UZS_RATE = config("USD_TO_UZS_RATE", default=12700, cast=int)
 PAYME_MERCHANT_ID = config("PAYME_MERCHANT_ID", default="")
-PAYME_KEY = config("PAYME_KEY", default="")  # Payme kassa kaliti — webhook Basic Auth uchun
+PAYME_KEY = config("PAYME_KEY", default="")
 CLICK_SERVICE_ID = config("CLICK_SERVICE_ID", default="")
 CLICK_MERCHANT_ID = config("CLICK_MERCHANT_ID", default="")
-CLICK_SECRET_KEY = config("CLICK_SECRET_KEY", default="")  # Click imzo (sign_string) tekshiruvi uchun
+CLICK_SECRET_KEY = config("CLICK_SECRET_KEY", default="")
 
 
+# === CORS ===
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default=(
@@ -180,17 +175,16 @@ CORS_ALLOWED_ORIGINS = config(
     ],
 )
 
-
+# Faqat SIZNING Vercel jamoangizning preview URL'lariga ruxsat (jamoa nomi bilan toraytirilgan)
+_VERCEL_TEAM = r"kadirovrahmatilloqodirov202-6776s-projects"
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://talim-ai-[a-zA-Z0-9-]+\.vercel\.app$",
-    r"^https://talim-[a-zA-Z0-9-]+-projects\.vercel\.app$",
+    rf"^https://talim-[a-z0-9]+-{_VERCEL_TEAM}\.vercel\.app$",
+    rf"^https://talim-ai-[a-z0-9-]+-{_VERCEL_TEAM}\.vercel\.app$",
 ]
-
 
 CORS_ALLOW_CREDENTIALS = True
 
-
-CORS_URLS_REGEX = r"^/api/.*$"
+# CORS_URLS_REGEX olib tashlandi: endi CORS barcha yo'llarga (/api/..., /auth/...) qo'llanadi.
 
 
 LANGUAGE_CODE = "en-us"
@@ -205,15 +199,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 XAI_MODEL = config("XAI_MODEL", default="grok-4.1-fast")
 
 # === AI Ustoz (Claude) ===
-# ANTHROPIC_API_KEY bo'lsa AI Ustoz Claude orqali ishlaydi (tool'lar bilan).
-# Bo'lmasa yoki Claude javob bermasa — eski xAI -> Groq zanjiriga tushadi.
 ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
 ANTHROPIC_MODEL = config("ANTHROPIC_MODEL", default="claude-sonnet-5-5")
-AI_TUTOR_HISTORY_LIMIT: object = config("AI_TUTOR_HISTORY_LIMIT", default=20, cast=int)  # Claude'ga yuboriladigan oxirgi xabarlar soni
+AI_TUTOR_HISTORY_LIMIT = config("AI_TUTOR_HISTORY_LIMIT", default=20, cast=int)
 AI_TUTOR_MAX_TOOL_ROUNDS = config("AI_TUTOR_MAX_TOOL_ROUNDS", default=8, cast=int)
 
-# === Speaking (ixtiyoriy: pip install -r requirements/speaking.txt) ===
-WHISPER_MODEL_SIZE = config("WHISPER_MODEL_SIZE", default="small")  # tiny | base | small | medium | large-v3
+# === Speaking (ixtiyoriy) ===
+WHISPER_MODEL_SIZE = config("WHISPER_MODEL_SIZE", default="small")
 SPEAKING_MAX_UPLOAD_MB = config("SPEAKING_MAX_UPLOAD_MB", default=10, cast=int)
-
-

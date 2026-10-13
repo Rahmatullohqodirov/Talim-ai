@@ -8,13 +8,13 @@ SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = False  # frontend JS CSRF tokenini o'qishi kerak bo'lsa False qoladi
-# Reverse proxy (nginx) orqasida ishlaganda Django https ekanini bilishi uchun:
+CSRF_COOKIE_HTTPONLY = False
+# Vercel / reverse proxy orqasida Django https ekanini bilishi uchun:
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
-# --- HSTS: brauzerga "faqat https orqali kir" deb aytadi ---
-SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30  # 30 kun; barqaror ishlagach 1 yilga (31536000) oshiring
+# --- HSTS ---
+SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
@@ -23,27 +23,41 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 X_FRAME_OPTIONS = "DENY"
 
-# --- CSRF: frontend domenidan kelayotgan so'rovlarga ishonch ---
-# Payme/Click webhooklari CSRF-dan ozod qilingan (@csrf_exempt), lekin admin panel/POST
-# so'rovlar uchun frontendning haqiqiy domenini bu yerga qo'shish SHART, aks holda 403 xato beradi.
 ALLOWED_HOSTS = [
     h.strip()
     for h in config("ALLOWED_HOSTS", default="").split(",")
     if h.strip()
 ]
 
+# --- CSRF: frontend va backend domenlariga ishonch ---
+# .env da vergul bilan ajratib yozing. Doimiy domenni albatta qo'shing.
 CSRF_TRUSTED_ORIGINS = [
-    "https://talim-ai-backend.vercel.app",
-    "https://talim-d5mh31a7d-kadirovrahmatilloqodirov202-6776s-projects.vercel.app",
+    origin.strip().rstrip("/")
+    for origin in config(
+        "CSRF_TRUSTED_ORIGINS",
+        default=(
+            "https://talim-ai-pi.vercel.app,"
+            "https://talim-ai-backend.vercel.app"
+        ),
+    ).split(",")
+    if origin.strip()
 ]
 
-# --- CORS: production'da faqat aniq domenlarga ruxsat, wildcard ishlatilmaydi ---
+# --- CORS: faqat aniq domenlar (preview URL'lar base.py dagi regex orqali ruxsat etiladi) ---
 CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in config(
+        "CORS_ALLOWED_ORIGINS",
+        default="https://talim-ai-pi.vercel.app",
+    ).split(",")
+    if origin.strip()
+]
 
-# --- Cookie/JWT umr sig'imi ---
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 14  # 14 kun
+# --- Cookie umri ---
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 14
 
-# --- Log: production xatolarini kuzatish uchun (Sentry ulanmagan bo'lsa ham fayl/console log) ---
+# --- Log ---
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -73,8 +87,9 @@ if not SECRET_KEY or SECRET_KEY == "dev-secret-key-change-me":
         "(masalan: python -c \"import secrets; print(secrets.token_urlsafe(50))\")."
     )
 if not ALLOWED_HOSTS:
-    raise RuntimeError("ALLOWED_HOSTS bo'sh — .env fayliga real domeningizni yozing (masalan: talim.uz,www.talim.uz).")
+    raise RuntimeError("ALLOWED_HOSTS bo'sh — .env fayliga real domeningizni yozing (masalan: talim-ai-backend.vercel.app).")
 
+# Vercel serverless'da Redis bo'lmasa, oddiy xotira keshi
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
