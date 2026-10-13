@@ -2,7 +2,6 @@ from .base import *
 from decouple import config
 
 DEBUG = False
-ALLOWED_HOSTS = [h.strip() for h in config("ALLOWED_HOSTS", default="").split(",") if h.strip()]
 
 # --- HTTPS / transport xavfsizligi ---
 SECURE_SSL_REDIRECT = True
@@ -27,11 +26,16 @@ X_FRAME_OPTIONS = "DENY"
 # --- CSRF: frontend domenidan kelayotgan so'rovlarga ishonch ---
 # Payme/Click webhooklari CSRF-dan ozod qilingan (@csrf_exempt), lekin admin panel/POST
 # so'rovlar uchun frontendning haqiqiy domenini bu yerga qo'shish SHART, aks holda 403 xato beradi.
-CSRF_TRUSTED_ORIGINS = config(
-    "CSRF_TRUSTED_ORIGINS",
-    default="",
-    cast=lambda v: [s.strip() for s in v.split(",") if s.strip()],
-)
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in config("ALLOWED_HOSTS", default="").split(",")
+    if h.strip()
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://talim-ai-backend.vercel.app",
+    "https://talim-d5mh31a7d-kadirovrahmatilloqodirov202-6776s-projects.vercel.app",
+]
 
 # --- CORS: production'da faqat aniq domenlarga ruxsat, wildcard ishlatilmaydi ---
 CORS_ALLOW_ALL_ORIGINS = False
