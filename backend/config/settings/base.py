@@ -165,6 +165,7 @@ CLICK_SERVICE_ID = config("CLICK_SERVICE_ID", default="")
 CLICK_MERCHANT_ID = config("CLICK_MERCHANT_ID", default="")
 CLICK_SECRET_KEY = config("CLICK_SECRET_KEY", default="")  # Click imzo (sign_string) tekshiruvi uchun
 
+
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default=(
@@ -178,6 +179,13 @@ CORS_ALLOWED_ORIGINS = config(
         if origin.strip()
     ],
 )
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://talim-ai-[a-zA-Z0-9-]+\.vercel\.app$",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_URLS_REGEX = r"^/api/.*$"
