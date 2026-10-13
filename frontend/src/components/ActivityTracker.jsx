@@ -74,7 +74,7 @@ export default function ActivityTracker() {
       const subject = getSubjectFromPath(location.pathname);
 
       fetch(
-        `${import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1"}/statistics/log-activity/`,
+        `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1").replace(/\/+$/, "")}/statistics/log-activity/`
         {
           method: "POST",
           headers: {
