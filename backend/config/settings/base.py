@@ -180,9 +180,12 @@ CORS_ALLOWED_ORIGINS = config(
     ],
 )
 
+
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://talim-ai-[a-zA-Z0-9-]+\.vercel\.app$",
+    r"^https://talim-[a-zA-Z0-9-]+-projects\.vercel\.app$",
 ]
+
 
 CORS_ALLOW_CREDENTIALS = True
 
