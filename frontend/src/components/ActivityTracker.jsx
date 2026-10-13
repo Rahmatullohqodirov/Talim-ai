@@ -2,6 +2,11 @@ import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { logActivity } from "../api/client.js";
 
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://talim-ai-backend.vercel.app/api/v1"
+).replace(/\/+$/, "");
+
 const TRACKED_ROUTES = [
   "/app/chat",
   "/app/math",
@@ -42,7 +47,6 @@ export default function ActivityTracker() {
     const sendActivity = async () => {
       const elapsedMs = Date.now() - startTimeRef.current;
       const totalMinutes = Math.floor(elapsedMs / 60000);
-
       const unsentMinutes = totalMinutes - sentMinutesRef.current;
 
       if (unsentMinutes <= 0) return;
@@ -57,10 +61,10 @@ export default function ActivityTracker() {
       }
     };
 
-    // Har 1 daqiqada yig'ilgan vaqtni backendga yuboradi
+    // Har 1 daqiqada faoliyatni backendga yuboradi.
     const interval = setInterval(sendActivity, 60000);
 
-    // Sahifadan chiqishda qolgan vaqtni yuborishga harakat qiladi
+    // Sahifadan chiqishda qolgan vaqtni yuborishga harakat qiladi.
     const handleBeforeUnload = () => {
       const elapsedMs = Date.now() - startTimeRef.current;
       const totalMinutes = Math.floor(elapsedMs / 60000);
@@ -73,22 +77,19 @@ export default function ActivityTracker() {
 
       const subject = getSubjectFromPath(location.pathname);
 
-      fetch(
-        `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1").replace(/\/+$/, "")}/statistics/log-activity/`
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            subject_code: subject,
-            minutes: unsentMinutes,
-            sessions: 0,
-          }),
-          keepalive: true,
-        }
-      ).catch(() => {});
+      fetch(`${API_BASE_URL}/statistics/log-activity/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subject_code: subject,
+          minutes: unsentMinutes,
+          sessions: 0,
+        }),
+        keepalive: true,
+      }).catch(() => {});
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -97,7 +98,7 @@ export default function ActivityTracker() {
       clearInterval(interval);
       window.removeEventListener("beforeunload", handleBeforeUnload);
 
-      // React Router orqali boshqa sahifaga o'tganda
+      // React Router orqali boshqa sahifaga o'tganda.
       sendActivity();
     };
   }, [location.pathname, isTracked]);
