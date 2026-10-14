@@ -3,12 +3,19 @@ from datetime import timedelta
 from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
+REDIS_URL = config("REDIS_URL", default="")
 SECRET_KEY = config("SECRET_KEY", default="dev-secret-key-change-me")
 AUTH_USER_MODEL = "accounts.User"
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
-
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="127.0.0.1,localhost,.trycloudflare.com",
+    cast=lambda v: [h.strip() for h in v.split(",") if h.strip()],
+)
+USE_REDIS = config("USE_REDIS", default=False, cast=bool)
+REDIS_URL = config("REDIS_URL", default="") if USE_REDIS else ""
 # --- Email (ro'yxatdan o'tishni tasdiqlash uchun) ---
+# Standart: konsolga chiqaradi (dev uchun qulay). Haqiqiy email yuborish uchun .env fayliga
+# EMAIL_HOST/EMAIL_HOST_USER/EMAIL_HOST_PASSWORD to'ldiring.
 EMAIL_HOST = config("EMAIL_HOST", default="")
 if EMAIL_HOST:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -59,9 +66,13 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+<<<<<<< Updated upstream
 
     "django.middleware.security.SecurityMiddleware",
     'whitenoise.middleware.WhiteNoiseMiddleware',
+=======
+    # CorsMiddleware ENG BIRINCHI bo'lishi kerak
+>>>>>>> Stashed changes
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -96,19 +107,37 @@ TEMPLATES = [
     },
 ]
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": config("REDIS_URL", default="redis://localhost:6379/1"),
-    }
-}
+# === Redis (ixtiyoriy) ===
+# .env da REDIS_URL bo'lmasa, Redis ishlatilmaydi (cache, WebSocket va Celery xotirada ishlaydi).
+REDIS_URL = config("REDIS_URL", default="")
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": [config("REDIS_URL", default="redis://localhost:6379/2")]},
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
     }
-}
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
+        }
+    }
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+else:
+    CACHES = {
+        "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}
+    }
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+    }
+    # Celery vazifalari worker'siz, so'rov ichida darhol bajariladi
+    CELERY_BROKER_URL = "memory://"
+    CELERY_RESULT_BACKEND = "cache+memory://"
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -117,6 +146,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Login/register kabi ochiq endpointlarni brute-force'dan himoya qilish
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.ScopedRateThrottle",
     ],
@@ -141,8 +171,6 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
 }
 
-CELERY_BROKER_URL = config("REDIS_URL", default="redis://localhost:6379/3")
-CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -161,32 +189,33 @@ CLICK_MERCHANT_ID = config("CLICK_MERCHANT_ID", default="")
 CLICK_SECRET_KEY = config("CLICK_SECRET_KEY", default="")
 
 
+
+
 # === CORS ===
 CORS_ALLOWED_ORIGINS = config(
     "CORS_ALLOWED_ORIGINS",
     default=(
         "http://localhost:5173,"
         "http://127.0.0.1:5173,"
-        "https://talim-ai-pi.vercel.app"
+        "https://talim-ai-nu.vercel.app"
     ),
     cast=lambda v: [
-        origin.strip().rstrip("/")
-        for origin in v.split(",")
-        if origin.strip()
+        s.strip().rstrip("/")
+        for s in v.split(",")
+        if s.strip()
     ],
 )
 
-# Faqat SIZNING Vercel jamoangizning preview URL'lariga ruxsat (jamoa nomi bilan toraytirilgan)
-_VERCEL_TEAM = r"kadirovrahmatilloqodirov202-6776s-projects"
+
+
+
+
+# Faqat sinov uchun: har qanday trycloudflare.com saytiga ruxsat.
+# Haqiqiy foydalanuvchilarga berishdan oldin olib tashlang va CORS_ALLOWED_ORIGINS'ga aniq manzil yozing.
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    rf"^https://talim-[a-z0-9]+-{_VERCEL_TEAM}\.vercel\.app$",
-    rf"^https://talim-ai-[a-z0-9-]+-{_VERCEL_TEAM}\.vercel\.app$",
+    r"^https://[a-z0-9-]+\.trycloudflare\.com$",
 ]
-
 CORS_ALLOW_CREDENTIALS = True
-
-# CORS_URLS_REGEX olib tashlandi: endi CORS barcha yo'llarga (/api/..., /auth/...) qo'llanadi.
-
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Tashkent"
@@ -198,7 +227,6 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 
 XAI_MODEL = config("XAI_MODEL", default="grok-4.1-fast")
 

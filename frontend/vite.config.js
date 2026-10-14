@@ -3,6 +3,12 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  // Qo'shilgan server sozlamasi
+  server: {
+    host: true,
+    allowedHosts: ["assured-lion-distinguished-composer.trycloudflare.com"],
+  },
+
   plugins: [
     react(),
     VitePWA({
@@ -29,7 +35,7 @@ export default defineConfig({
           {
             // Qolgan GET so'rovlar (ro'yxatlar) — avval tarmoqdan urinadi, ishlamasa keshdan ko'rsatadi
             urlPattern: ({ url, request }) =>
-              request.method === "GET" && url.pathname.startsWith("/api/v1/"),
+              request.method === "GET" && url.pathname.request === "GET" && url.pathname.startsWith("/api/v1/"),
             handler: "NetworkFirst",
             options: {
               cacheName: "supertutor-api-cache",
@@ -40,6 +46,7 @@ export default defineConfig({
           },
         ],
       },
+
       manifest: {
         name: "Talim",
         short_name: "Talim",

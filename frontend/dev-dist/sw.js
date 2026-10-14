@@ -81,7 +81,7 @@ define(['./workbox-53ea84cd'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "/index.html",
-    "revision": "0.355gjmv8gm"
+    "revision": "0.4h1to4it5j8"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/index.html"), {
@@ -102,7 +102,7 @@ define(['./workbox-53ea84cd'], (function (workbox) { 'use strict';
   workbox.registerRoute(({
     url,
     request
-  }) => request.method === "GET" && url.pathname.startsWith("/api/v1/"), new workbox.NetworkFirst({
+  }) => request.method === "GET" && url.pathname.request === "GET" && url.pathname.startsWith("/api/v1/"), new workbox.NetworkFirst({
     "cacheName": "supertutor-api-cache",
     "networkTimeoutSeconds": 4,
     plugins: [new workbox.ExpirationPlugin({
