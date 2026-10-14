@@ -1,7 +1,7 @@
 
 const BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
-  "https://talim-ysht.onrender.com/api/v1"
+  "https://talim-ai-2.onrender.com/api/v1"
 ).replace(/\/+$/, "");
 
 function authHeaders() {
