@@ -59,13 +59,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-<<<<<<< HEAD:talim/backend/config/settings/base.py
+
     "django.middleware.security.SecurityMiddleware",
     'whitenoise.middleware.WhiteNoiseMiddleware',
-=======
-    # CorsMiddleware ENG BIRINCHI bo'lishi kerak: SecurityMiddleware'ning SSL redirecti
-    # preflight (OPTIONS) so'rovni buzmasligi uchun.
->>>>>>> 6795886db32ca410218800b20c1eaa0c16cc8bb7:backend/config/settings/base.py
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
