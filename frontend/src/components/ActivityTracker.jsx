@@ -1,10 +1,10 @@
-import { useEffect, useRef } from "react";
+﻿import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { logActivity } from "../api/client.js";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
-  "https://talim-ai-backend.vercel.app/api/v1"
+  "https://talim-ysht.onrender.com/api/v1"
 ).replace(/\/+$/, "");
 
 const TRACKED_ROUTES = [
@@ -105,3 +105,4 @@ export default function ActivityTracker() {
 
   return null;
 }
+
