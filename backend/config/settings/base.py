@@ -66,13 +66,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-<<<<<<< Updated upstream
 
     "django.middleware.security.SecurityMiddleware",
     'whitenoise.middleware.WhiteNoiseMiddleware',
-=======
     # CorsMiddleware ENG BIRINCHI bo'lishi kerak
->>>>>>> Stashed changes
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

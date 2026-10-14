@@ -1,6 +1,8 @@
-const BASE_URL =
+
+const BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:8000/api/v1";
+  "https://talim-ysht.onrender.com/api/v1"
+).replace(/\/+$/, "");
 
 function authHeaders() {
   const token = localStorage.getItem("st_access_token");
