@@ -47,22 +47,31 @@ class AIChatThreadListSerializer(_SubjectFieldsMixin, serializers.ModelSerialize
         msg = msgs[0] if msgs else obj.messages.order_by("-created_at").first()
         return msg.content[:120] if msg else ""
 
-
 class AIChatThreadSerializer(_SubjectFieldsMixin, serializers.ModelSerializer):
     messages = AIChatMessageSerializer(many=True, read_only=True)
-    # Yaratishda fan kodini ham qabul qilamiz: {"subject_code": "english"}
-    subject_code_input = serializers.CharField(write_only=True, required=False, allow_blank=True, allow_null=True)
+    subject_code_input = serializers.CharField(
+        write_only=True, required=False, allow_blank=True, allow_null=True
+    )
     lesson = serializers.SerializerMethodField()
 
     class Meta:
         model = AIChatThread
-        fields = ["id", "subject", "subject_code", "subject_name", "subject_code_input", "title", "messages",
-                  "lesson", "updated_at"]
+        fields = [
+            "id",
+            "subject",
+            "subject_code",
+            "subject_name",
+            "subject_code_input",
+            "title",
+            "messages",
+            "lesson",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "messages", "updated_at"]
 
     def get_lesson(self, obj):
         from .learner import lesson_state
         return lesson_state(obj) if obj.pk else None
-        read_only_fields = ["id", "messages", "updated_at"]
 
     def validate(self, attrs):
         code = attrs.pop("subject_code_input", None)
@@ -70,10 +79,11 @@ class AIChatThreadSerializer(_SubjectFieldsMixin, serializers.ModelSerializer):
             from apps.subjects.models import Subject
             subject = Subject.objects.filter(code=code).first()
             if not subject:
-                raise serializers.ValidationError({"subject_code": f"'{code}' fani topilmadi"})
+                raise serializers.ValidationError({
+                    "subject_code": f"'{code}' fani topilmadi"
+                })
             attrs["subject"] = subject
         return attrs
-
 
 class LearnerMemorySerializer(serializers.ModelSerializer):
     category_label = serializers.CharField(source="get_category_display", read_only=True)
