@@ -18,6 +18,7 @@ REDIS_URL = config("REDIS_URL", default="") if USE_REDIS else ""
 # EMAIL_HOST/EMAIL_HOST_USER/EMAIL_HOST_PASSWORD to'ldiring.
 EMAIL_HOST = config("EMAIL_HOST", default="")
 if EMAIL_HOST:
+    EMAIL_TIMEOUT = 10
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
     EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
